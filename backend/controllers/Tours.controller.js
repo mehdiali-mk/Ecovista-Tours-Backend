@@ -13,7 +13,7 @@ export async function createTour(request, response) {
       },
     });
   } catch (error) {
-    response.status(400).json({ status: "fail", message: "Invalid Data!" });
+    response.status(400).json({ status: "fail", message: error.message });
   }
 }
 
@@ -118,3 +118,167 @@ export async function deleteTour(request, response) {
     response.status(404).json({ status: "fail", message: error.message });
   }
 }
+
+export async function aggregatePipeline(request, response) {
+  try {
+    const stats = await Tours.aggregate([
+      {
+        $match: { ratingsAverage: { $gte: 4.5 } },
+      },
+      {
+        $facet: {
+          allToursGroup: [
+            {
+              $group: {
+                _id: null,
+                numberOfTours: { $sum: 1 },
+                numberOfRatings: { $sum: "$ratingsQuantity" },
+                averageRatings: { $avg: "$ratingsAverage" },
+                averagePrice: { $avg: "$price" },
+                minimumPrice: { $min: "$price" },
+                maximumPrice: { $max: "$price" },
+              },
+            },
+          ],
+
+          difficultyGroup: [
+            {
+              $group: {
+                _id: { $toUpper: "$difficulty" },
+                numberOfTours: { $sum: 1 },
+                numberOfRatings: { $sum: "$ratingsQuantity" },
+                averageRatings: { $avg: "$ratingsAverage" },
+                averagePrice: { $avg: "$price" },
+                minimumPrice: { $min: "$price" },
+                maximumPrice: { $max: "$price" },
+              },
+            },
+            { $sort: { averagePrice: -1 } },
+          ],
+        },
+      },
+    ]);
+
+    response.status(200).json({ status: "success", data: { stats } });
+  } catch (error) {
+    response.status(404).json({ status: "fail", message: error.message });
+  }
+}
+
+export async function getMonthlyPlan(request, response) {
+  try {
+    const year = request.params.year * 1;
+
+    const plan = await Tours.aggregate([
+      {
+        $unwind: "$startDates",
+      },
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: { $month: "$startDates" },
+          numberOfTours: { $sum: 1 },
+          tours: {
+            $push: {
+              name: "$name",
+              difficulty: "$difficulty",
+              duration: "$duration",
+            },
+          },
+          averagePrice: { $avg: "$price" },
+        },
+      },
+      {
+        $addFields: {
+          month: "$_id",
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+        },
+      },
+      { $sort: { numberOfTours: -1, averagePrice: -1 } },
+    ]);
+
+    response.status(200).json({ status: "success", data: { plan } });
+  } catch (error) {
+    response.status(404).json({ status: "fail", message: error.message });
+  }
+}
+
+// My Logic
+// export async function getMonthlyPlan(request, response) {
+//   try {
+//     const year = request.params.year * 1;
+
+//     const plan = await Tours.aggregate([
+//       {
+//         $unwind: "$startDates",
+//       },
+//       {
+//         $match: {
+//           startDates: {
+//             $gte: new Date(`${year}-01-01`),
+//             $lte: new Date(`${year}-12-31`),
+//           },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: { $month: "$startDates" },
+//           numberOfTours: { $sum: 1 },
+//           tours: {
+//             $push: {
+//               name: "$name",
+//               difficulty: "$difficulty",
+//               duration: "$duration",
+//             },
+//           },
+//           averagePrice: { $avg: "$price" },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           month: {
+//             $arrayElemAt: [
+//               [
+//                 "", // Index 0 is empty because our month numbers start at 1, not 0
+//                 "January",
+//                 "February",
+//                 "March",
+//                 "April",
+//                 "May",
+//                 "June",
+//                 "July",
+//                 "August",
+//                 "September",
+//                 "October",
+//                 "November",
+//                 "December",
+//               ],
+//               "$_id", // We use the group _id (the month number) to pick the string from the array above
+//             ],
+//           },
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 0,
+//         },
+//       },
+//       { $sort: { numberOfTours: -1, averagePrice: -1 } },
+//     ]);
+
+//     response.status(200).json({ status: "success", data: { plan } });
+//   } catch (error) {
+//     response.status(404).json({ status: "fail", message: error.message });
+//   }
+// }
