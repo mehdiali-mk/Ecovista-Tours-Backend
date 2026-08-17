@@ -90,7 +90,7 @@ tourSchema.post(/^find/, function (document, next) {
 // AGGREGATE MIDDLEWARE
 tourSchema.pre("aggregate", function () {
   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-  console.log(this.pipeline());
+  // console.log(this.pipeline());
 });
 
 tourSchema.path("createdAt").select(false);
