@@ -1,14 +1,9 @@
-import dns from "node:dns";
 import dotenv from "dotenv";
-import connectDB from "./configs/connectDB.js";
+import connectDB, { configureMongoDns } from "./configs/connectDB.js";
 import app from "./app.js";
 
-dotenv.config({ path: "./.env" });
-
-if (process.env.NODE_ENV !== "production") {
-  dns.setServers(["8.8.8.8", "8.8.4.4"]);
-}
-
+dotenv.config({ path: "./.env", override: true });
+configureMongoDns();
 connectDB();
 
 const runningPort = process.env.PORT || 8089;

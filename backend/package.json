@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
+    "start:prod": "cross-env NODE_ENV=production nodemon server.js",
     "debug": "ndb server.js"
   },
   "keywords": [],
@@ -20,6 +20,7 @@
     "slugify": "^1.6.9"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "ndb": "^1.1.5"
   }
 }

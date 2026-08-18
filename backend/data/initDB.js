@@ -1,14 +1,10 @@
-import dns from "node:dns";
 import dotenv from "dotenv";
-import connectDB from "../configs/connectDB.js";
+import connectDB, { configureMongoDns } from "../configs/connectDB.js";
 import fs from "fs";
 import Tours from "../models/Tours.models.js";
 
-dotenv.config({ path: "../.env" });
-
-if (process.env.NODE_ENV !== "production") {
-  dns.setServers(["8.8.8.8", "8.8.4.4"]);
-}
+dotenv.config({ path: "../.env", override: true });
+configureMongoDns();
 
 const toursData = JSON.parse(fs.readFileSync("./tours-simple.json", "utf-8"));
 
