@@ -14,6 +14,8 @@ app.set("query parser", "extended");
 app.use("/api/v1/tours", toursRouter);
 app.use("/api/v1/users", userRouter);
 
+// app.use();
+
 app.all("/{*path}", (request, response, next) => {
   // response.status(404).json({
   //   status: "fail",

@@ -36,12 +36,23 @@ export function globalErrorHandler(error, request, response, next) {
       myCustomError = handleCastErrorDB(error);
     }
 
-    if (myCustomError?.errorResponse?.code === 11000) {
+    if (
+      myCustomError?.code === 11000 ||
+      myCustomError?.errorResponse?.code === 11000
+    ) {
       myCustomError = handleDuplicateFieldsDB(error);
     }
 
     if (myCustomError?.name === "ValidationError") {
       myCustomError = handleValidationErrorDB(error);
+    }
+
+    if (myCustomError?.name === "JsonWebTokenError") {
+      myCustomError = handleJsonWebTokenError();
+    }
+
+    if (myCustomError?.name === "TokenExpiredError") {
+      myCustomError = handleJsonWebTokenExpiredError();
     }
 
     sendErrorInProduction(myCustomError, response);
@@ -54,9 +65,16 @@ function handleCastErrorDB(error) {
 }
 
 function handleDuplicateFieldsDB(error) {
-  const value = error.errorResponse.errmsg
-    .match(/([\'"])(.*?)\1/)[0]
-    .slice(1, -1);
+  const duplicateValue =
+    error?.keyValue && Object.keys(error.keyValue).length
+      ? Object.values(error.keyValue)[0]
+      : null;
+
+  const fallbackValue = error?.errorResponse?.errmsg
+    ? error.errorResponse.errmsg.match(/([\'\"])(.*?)\1/)?.[0]?.slice(1, -1)
+    : null;
+
+  const value = duplicateValue || fallbackValue || "already exists";
   const message = `Duplicate field value: ${value}. Please use another value!`;
 
   return new AppError(message, 400);
@@ -67,4 +85,12 @@ function handleValidationErrorDB(error) {
 
   const message = `Invalid data input: ${errors.join(". ")}`;
   return new AppError(message, 400);
+}
+
+function handleJsonWebTokenError() {
+  return new AppError("Invalid Attempt. Please login again!", 401);
+}
+
+function handleJsonWebTokenExpiredError() {
+  return new AppError("Session Expired. Please login again!", 401);
 }
