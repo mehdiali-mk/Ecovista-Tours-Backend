@@ -11,6 +11,25 @@ function signJwtToken(id) {
   });
 }
 
+function createSendJwtToken(user, responseStatus, response) {
+  const token = signJwtToken(user._id);
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+
+  response.cookie("jwt", token, cookieOptions);
+
+  user.password = undefined;
+
+  response
+    .status(responseStatus)
+    .json({ status: "success", token, data: user });
+}
+
 export const signup = catchAsync(async (request, response, next) => {
   const { name, email, password, passwordConfirm, role } = request.body;
 
@@ -22,9 +41,7 @@ export const signup = catchAsync(async (request, response, next) => {
     role,
   });
 
-  const token = signJwtToken(user._id);
-
-  response.status(200).json({ status: "success", token, data: user });
+  createSendJwtToken(user, 200, response);
 });
 
 export const login = catchAsync(async (request, response, next) => {
@@ -37,15 +54,13 @@ export const login = catchAsync(async (request, response, next) => {
 
   // 2. Check for actual user.
   const user = await User.findOne({ email }).select("+password");
-  const correct = user.correctPassword(password, user.password);
+  const correct = await user.correctPassword(password, user.password);
 
   if (!user || !correct) {
     return next(new AppError("Incorrect email or password!", 401));
   }
 
-  const token = signJwtToken(user._id);
-
-  response.status(200).json({ status: "success", token });
+  createSendJwtToken(user, 200, response);
 });
 
 export const forgotPassword = catchAsync(async (request, response, next) => {
@@ -118,7 +133,25 @@ export const resetPassword = catchAsync(async (request, response, next) => {
   await user.save();
 
   // 4. Login the user in and send JWT.
-  const token = signJwtToken(user._id);
+  createSendJwtToken(user, 200, response);
+});
 
-  response.status(200).json({ status: "success", token });
+export const updatePassword = catchAsync(async (request, response, next) => {
+  // 1. Get the user by Id.
+  const user = await User.findById(request.user.id).select("+password");
+
+  // 2. Check current password is correct or not.
+  if (
+    !(await user.correctPassword(request.body.passwordCurrent, user.password))
+  ) {
+    return next(new AppError("Your current password is Wrong!", 401));
+  }
+
+  // 3. Save the password and confirm password to the user.
+  user.password = request.body.password;
+  user.passwordConfirm = request.body.passwordConfirm;
+  await user.save();
+
+  // 4. Send the jwt token back.
+  createSendJwtToken(user, 200, response);
 });
