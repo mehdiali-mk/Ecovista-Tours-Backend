@@ -20,6 +20,15 @@ app.set("query parser", "extended");
 // Global Middlewares.
 // Headers Security.
 app.use(helmet());
+app.use((request, response, next) => {
+  Object.defineProperty(request, "query", {
+    configurable: true,
+    enumerable: true,
+    value: request.query,
+    writable: true,
+  });
+  next();
+});
 app.use(mongoSanitize());
 app.use(xss());
 app.use(

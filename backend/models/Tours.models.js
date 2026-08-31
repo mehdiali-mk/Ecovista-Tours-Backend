@@ -57,6 +57,35 @@ const tourSchema = new mongoose.Schema(
     startDates: [Date],
     slug: { type: String, unique: true },
     secretTour: { type: Boolean, default: false },
+    startLocation: {
+      type: {
+        type: String,
+        default: "Point",
+        enum: ["Point"],
+      },
+      coordinates: [Number],
+      address: String,
+      description: String,
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: "Point",
+          enum: ["Point"],
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number,
+      },
+    ],
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   {
     timestamps: true,
@@ -77,6 +106,10 @@ tourSchema.pre("save", function () {
 });
 
 // QUERY MIDDLEWARE
+tourSchema.pre(/^find/, function () {
+  this.populate({ path: "guides", select: "-__v -passwordChangedAt" });
+});
+
 tourSchema.pre(/^find/, function () {
   this.find({ secretTour: { $ne: true } });
   this.start = Date.now();

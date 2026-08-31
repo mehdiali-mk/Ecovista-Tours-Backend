@@ -6,7 +6,7 @@ import Tours from "../models/Tours.models.js";
 dotenv.config({ path: "../.env", override: true });
 configureMongoDns();
 
-const toursData = JSON.parse(fs.readFileSync("./tours-simple.json", "utf-8"));
+const toursData = JSON.parse(fs.readFileSync("./tours.json", "utf-8"));
 
 connectDB();
 
