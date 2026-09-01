@@ -11,8 +11,15 @@ import {
 import { top5ToursRouteAlias } from "../middlewares/Tours.middleware.js";
 import authUser from "../middlewares/authUser.middleware.js";
 import restrictTo from "../middlewares/restrictTo.middleware.js";
+import reviewRouter from "./Review.route.js";
 
 const toursRouter = express.Router();
+
+// toursRouter
+//   .route("/:tourId/reviews")
+//   .post(authUser, restrictTo("user"), createReview);
+
+toursRouter.use("/:tourId/reviews", reviewRouter);
 
 toursRouter
   .route("/top-5-tours")

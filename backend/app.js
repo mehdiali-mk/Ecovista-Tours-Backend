@@ -11,6 +11,7 @@ import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import xss from "xss-clean";
 import hpp from "hpp";
+import reviewRouter from "./routes/Review.route.js";
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use("/api", limiter);
 // Actual routs of application.
 app.use("/api/v1/tours", toursRouter);
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/reviews", reviewRouter);
 
 // Handling 404 page not found error.
 app.all("/{*path}", (request, response, next) => {

@@ -3,6 +3,8 @@ import Tours from "../models/Tours.models.js";
 import APIFeatures from "../utils/apiFeature.util.js";
 import catchAsync from "../utils/catchAsync.util.js";
 import AppError from "../utils/appError.util.js";
+import Review from "../models/Reviews.models.js";
+import { deleteOne, updateOne } from "./FactoryFunction.controller.js";
 
 export const createTour = catchAsync(async (request, response, next) => {
   const newTour = await Tours.create(request.body);
@@ -77,7 +79,9 @@ export const getAllTours = catchAsync(async (request, response, next) => {
 });
 
 export const getTour = catchAsync(async (request, response, next) => {
-  const tour = await Tours.findById(request.params.id);
+  const tour = await Tours.findById(request.params.id).populate({
+    path: "reviews",
+  });
 
   if (!tour) {
     return next(new AppError("No tours with that ID!", 404));
@@ -86,32 +90,18 @@ export const getTour = catchAsync(async (request, response, next) => {
   response.status(200).json({ status: "success", data: { tour } });
 });
 
-export const updateTour = catchAsync(async (request, response, next) => {
-  const updatedTour = await Tours.findByIdAndUpdate(
-    request.params.id,
-    request.body,
-    {
-      new: true,
-      runValidators: true,
-    },
-  );
+export const updateTour = updateOne(Tours);
+export const deleteTour = deleteOne(Tours);
 
-  if (!updatedTour) {
-    return next(new AppError("No tours with that ID!", 404));
-  }
+// export const deleteTour = catchAsync(async (request, response, next) => {
+//   const deletedTour = await Tours.findByIdAndDelete(request.params.id);
 
-  response.status(200).json({ status: "success", data: { tour: updatedTour } });
-});
+//   if (!deletedTour) {
+//     return next(new AppError("No tours with that ID!", 404));
+//   }
 
-export const deleteTour = catchAsync(async (request, response, next) => {
-  const deletedTour = await Tours.findByIdAndDelete(request.params.id);
-
-  if (!deletedTour) {
-    return next(new AppError("No tours with that ID!", 404));
-  }
-
-  response.status(204).json({ status: "success", data: { tour: deleteTour } });
-});
+//   response.status(204).json({ status: "success", data: { tour: deleteTour } });
+// });
 
 export const aggregatePipeline = catchAsync(async (request, response, next) => {
   const stats = await Tours.aggregate([

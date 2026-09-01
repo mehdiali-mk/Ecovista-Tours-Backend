@@ -3,14 +3,7 @@ import User from "../models/Users.models.js";
 import catchAsync from "../utils/catchAsync.util.js";
 import { request } from "http";
 import AppError from "../utils/appError.util.js";
-
-function filterObject(object, ...allowedFields) {
-  const newObject = {};
-  Object.keys(object).forEach((element) => {
-    if (allowedFields.includes(element)) newObject[element] = object[element];
-  });
-  return newObject;
-}
+import { updateOne } from "./FactoryFunction.controller.js";
 
 export const getAllUsers = catchAsync(async (request, response, next) => {
   const allUsers = await User.find();
@@ -31,27 +24,29 @@ export const deleteAllUsers = catchAsync(async (request, response, next) => {
   });
 });
 
-export const updateUser = catchAsync(async (request, response, next) => {
-  // 1. Check if the user changing the password or not.
-  if (request.body.password || request.body.passwordConfirm) {
-    return next(new AppError("Not for updating password!", 400));
-  }
+export const updateUser = updateOne(User);
 
-  // 2. Remove fields that are not allowed to update.
-  const filteredBody = filterObject(request.body, "name", "email");
+// export const updateUser = catchAsync(async (request, response, next) => {
+//   // 1. Check if the user changing the password or not.
+//   if (request.body.password || request.body.passwordConfirm) {
+//     return next(new AppError("Not for updating password!", 400));
+//   }
 
-  // 3. Actually update the user.
-  const updatedUser = await User.findByIdAndUpdate(
-    request.user.id,
-    filteredBody,
-    {
-      new: true,
-      runValidators: true,
-    },
-  );
+//   // 2. Remove fields that are not allowed to update.
+//   const filteredBody = filterObject(request.body, "name", "email");
 
-  response.status(200).json({ status: "success", data: { user: updatedUser } });
-});
+//   // 3. Actually update the user.
+//   const updatedUser = await User.findByIdAndUpdate(
+//     request.user.id,
+//     filteredBody,
+//     {
+//       new: true,
+//       runValidators: true,
+//     },
+//   );
+
+//   response.status(200).json({ status: "success", data: { user: updatedUser } });
+// });
 
 // export const deleteUser = catchAsync(await (request, response, next) => {
 
