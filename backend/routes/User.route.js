@@ -4,6 +4,7 @@ import {
   deleteAllUsers,
   deleteUser,
   getAllUsers,
+  getMe,
   getUser,
   updateUser,
 } from "../controllers/User.controller.js";
@@ -25,23 +26,19 @@ userRouter.route("/signup").post(signup);
 userRouter.route("/login").post(checkLoginAttempts, login);
 userRouter.route("/forgot-password").post(forgotPassword);
 userRouter.route("/reset-password/:token").patch(resetPassword);
-userRouter.patch("/update-my-password", authUser, updatePassword);
 
+userRouter.use(authUser);
+
+userRouter.patch("/update-my-password", updatePassword);
 userRouter.patch(
   "/update-user",
-  authUser,
   updateUserAllowedFields("name", "email"),
   updateUser,
 );
+userRouter.delete("/delete-user", deleteUser);
+userRouter.get("/me", getMe, getUser);
 
-userRouter.delete("/delete-user", authUser, deleteUser);
-
-userRouter
-  .route("/")
-  .get(authUser, getAllUsers)
-  .post(createUser)
-  // .delete(authUser, restrictTo("admin"), deleteAllUsers);
-  .delete(deleteAllUsers);
+userRouter.route("/").get(getAllUsers).post(createUser).delete(deleteAllUsers);
 
 userRouter.route("/:id").get(getUser).patch(updateUser).delete(deleteUser);
 

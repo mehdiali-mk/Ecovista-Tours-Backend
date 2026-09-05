@@ -3,17 +3,7 @@ import User from "../models/Users.models.js";
 import catchAsync from "../utils/catchAsync.util.js";
 import { request } from "http";
 import AppError from "../utils/appError.util.js";
-import { updateOne } from "./FactoryFunction.controller.js";
-
-export const getAllUsers = catchAsync(async (request, response, next) => {
-  const allUsers = await User.find();
-
-  response.status(200).json({
-    status: "success",
-    results: allUsers.length,
-    data: { users: allUsers },
-  });
-});
+import { getAll, getOne, updateOne } from "./FactoryFunction.controller.js";
 
 export const deleteAllUsers = catchAsync(async (request, response, next) => {
   const allDeletedUsers = await User.deleteMany({});
@@ -24,6 +14,12 @@ export const deleteAllUsers = catchAsync(async (request, response, next) => {
   });
 });
 
+export const getMe = catchAsync(async (request, response, next) => {
+  request.params.id = request.user.id;
+  next();
+});
+export const getAllUsers = getAll(User);
+export const getUser = getOne(User);
 export const updateUser = updateOne(User);
 
 // export const updateUser = catchAsync(async (request, response, next) => {
@@ -61,11 +57,5 @@ export const deleteUser = catchAsync(async (request, response, next) => {
 export function createUser(request, response) {
   response
     .status(500)
-    .json({ status: "fail", message: "API not created yet!" });
-}
-
-export function getUser(request, response) {
-  response
-    .status(500)
-    .json({ status: "fail", message: "API not created yet!" });
+    .json({ status: "fail", message: "Can't create user from this api." });
 }

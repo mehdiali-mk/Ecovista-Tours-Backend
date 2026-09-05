@@ -4,20 +4,25 @@ import {
   createReview,
   deleteReview,
   getAllReviews,
+  getReview,
   updateReview,
 } from "../controllers/Review.controller.js";
 import restrictTo from "../middlewares/restrictTo.middleware.js";
+import addTourUser from "../middlewares/addTourUser.middleware.js";
 
 const reviewRouter = express.Router({ mergeParams: true });
 
+reviewRouter.use(authUser);
+
 reviewRouter
   .route("/")
-  .post(authUser, restrictTo("user"), createReview)
+  .post(restrictTo("user"), addTourUser, createReview)
   .get(getAllReviews);
 
 reviewRouter
   .route("/:id")
-  .delete(authUser, deleteReview)
-  .patch(authUser, updateReview);
+  .get(getReview)
+  .delete(deleteReview)
+  .patch(restrictTo("user", "admin"), updateReview);
 
 export default reviewRouter;

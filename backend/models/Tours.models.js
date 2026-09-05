@@ -94,6 +94,9 @@ const tourSchema = new mongoose.Schema(
   },
 );
 
+tourSchema.index({ price: 1, ratingsAverage: -1 });
+tourSchema.index({ startLocation: "2dsphere" });
+
 tourSchema.virtual("durationWeek").get(function () {
   return (this.duration / 7).toFixed(2) * 1;
 });
@@ -127,10 +130,10 @@ tourSchema.post(/^find/, function (document, next) {
 });
 
 // AGGREGATE MIDDLEWARE
-tourSchema.pre("aggregate", function () {
-  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-  // console.log(this.pipeline());
-});
+// tourSchema.pre("aggregate", function () {
+//   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+//   // console.log(this.pipeline());
+// });
 
 tourSchema.path("createdAt").select(false);
 tourSchema.path("updatedAt").select(false);

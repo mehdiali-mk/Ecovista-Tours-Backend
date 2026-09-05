@@ -4,8 +4,10 @@ import {
   createTour,
   deleteTour,
   getAllTours,
+  getDistances,
   getMonthlyPlan,
   getTour,
+  getToursWithin,
   updateTour,
 } from "../controllers/Tours.controller.js";
 import { top5ToursRouteAlias } from "../middlewares/Tours.middleware.js";
@@ -31,6 +33,12 @@ toursRouter
 toursRouter
   .route("/get-monthly-plan/:year")
   .get(authUser, restrictTo("admin"), getMonthlyPlan);
+
+toursRouter
+  .route("/tours-within/:distance/center/:latitudeLongitude/unit/:unit")
+  .get(getToursWithin);
+
+toursRouter.route("/distances/:latitudeLongitude/unit/:unit").get(getDistances);
 
 toursRouter
   .route("/")

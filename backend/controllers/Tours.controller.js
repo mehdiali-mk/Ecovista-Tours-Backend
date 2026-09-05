@@ -4,104 +4,19 @@ import APIFeatures from "../utils/apiFeature.util.js";
 import catchAsync from "../utils/catchAsync.util.js";
 import AppError from "../utils/appError.util.js";
 import Review from "../models/Reviews.models.js";
-import { deleteOne, updateOne } from "./FactoryFunction.controller.js";
+import {
+  createOne,
+  deleteOne,
+  getAll,
+  getOne,
+  updateOne,
+} from "./FactoryFunction.controller.js";
 
-export const createTour = catchAsync(async (request, response, next) => {
-  const newTour = await Tours.create(request.body);
-
-  response.status(200).json({
-    status: "success",
-    data: {
-      tour: newTour,
-    },
-  });
-});
-
-export const getAllTours = catchAsync(async (request, response, next) => {
-  /*
-    
-    // 1 A) Basic Filtering
-    const queryObject = { ...request.query };
-
-    console.log(request.query);
-
-    const excludeFields = ["page", "limit", "sort", "fields"];
-    excludeFields.forEach((element) => delete queryObject[element]);
-
-    // Advanced Filtering
-    // 1 B) Advanced Filtering (add $ to gte, gt, lte, lt)
-    let queryStr = JSON.stringify(queryObject);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-
-    let query = Tours.find(JSON.parse(queryStr));
-
-    // Sorting
-    if (request.query.sort) {
-      const sortBy = request.query.sort.split(",").join(" ");
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort("-createdAt");
-    }
-
-    // Adding or Removing the fields.
-    if (request.query.fields) {
-      const fields = request.query.fields.split(",").join(" ");
-      query = query.select(fields);
-    } else {
-      query = query.select("-__v");
-    }
-
-
-    // Paging the Query.
-    const page = request.query.page * 1 || 1;
-    const limit = request.query.limit * 1 || 100;
-    const skip = (page - 1) * limit;
-
-    query = query.skip(skip).limit(limit);
-
-    if (request.query.page) {
-      const totalTour = await Tours.countDocuments();
-      if (skip >= totalTour) throw new Error("This page does not exist.");
-    }
-    
-    */
-
-  const features = new APIFeatures(Tours.find(), request.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .pagination();
-  const tours = await features.query;
-
-  response
-    .status(200)
-    .json({ status: "success", results: tours.length, data: { tours } });
-});
-
-export const getTour = catchAsync(async (request, response, next) => {
-  const tour = await Tours.findById(request.params.id).populate({
-    path: "reviews",
-  });
-
-  if (!tour) {
-    return next(new AppError("No tours with that ID!", 404));
-  }
-
-  response.status(200).json({ status: "success", data: { tour } });
-});
-
+export const getAllTours = getAll(Tours);
+export const getTour = getOne(Tours, { path: "reviews" });
+export const createTour = createOne(Tours);
 export const updateTour = updateOne(Tours);
 export const deleteTour = deleteOne(Tours);
-
-// export const deleteTour = catchAsync(async (request, response, next) => {
-//   const deletedTour = await Tours.findByIdAndDelete(request.params.id);
-
-//   if (!deletedTour) {
-//     return next(new AppError("No tours with that ID!", 404));
-//   }
-
-//   response.status(204).json({ status: "success", data: { tour: deleteTour } });
-// });
 
 export const aggregatePipeline = catchAsync(async (request, response, next) => {
   const stats = await Tours.aggregate([
@@ -189,6 +104,81 @@ export const getMonthlyPlan = catchAsync(async (request, response, next) => {
 
   response.status(200).json({ status: "success", data: { plan } });
 });
+
+export const getToursWithin = catchAsync(async (request, response, next) => {
+  const { distance, latitudeLongitude, unit } = request.params;
+
+  const [latitude, longitude] = latitudeLongitude.split(",");
+
+  const radius = unit === "mi" ? distance / 3963.2 : distance / 6378.1;
+
+  if (!latitude || !longitude) {
+    next(
+      new AppError(
+        "Please provide latitude or longitude in the format of lat,lng.",
+        400,
+      ),
+    );
+  }
+
+  const tours = await Tours.find({
+    startLocation: {
+      $geoWithin: { $centerSphere: [[longitude, latitude], radius] },
+    },
+  });
+
+  response
+    .status(200)
+    .json({ status: "success", results: tours.length, data: { data: tours } });
+});
+
+export const getDistances = catchAsync(async (request, response, next) => {
+  const { distance, latitudeLongitude, unit } = request.params;
+
+  const [latitude, longitude] = latitudeLongitude.split(",");
+
+  const multiplier = unit === "mi" ? 0.000621371 : 0.001;
+
+  if (!latitude || !longitude) {
+    next(
+      new AppError(
+        "Please provide latitude or longitude in the format of lat,lng.",
+        400,
+      ),
+    );
+  }
+
+  const distances = await Tours.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [longitude * 1, latitude * 1],
+        },
+        distanceField: "distance",
+        distanceMultiplier: multiplier,
+      },
+    },
+    {
+      $project: {
+        distance: 1,
+        name: 1,
+      },
+    },
+  ]);
+
+  response.status(200).json({ status: "success", data: { data: distances } });
+});
+
+// export const deleteTour = catchAsync(async (request, response, next) => {
+//   const deletedTour = await Tours.findByIdAndDelete(request.params.id);
+
+//   if (!deletedTour) {
+//     return next(new AppError("No tours with that ID!", 404));
+//   }
+
+//   response.status(204).json({ status: "success", data: { tour: deleteTour } });
+// });
 
 // My Logic
 // export async function getMonthlyPlan(request, response) {
